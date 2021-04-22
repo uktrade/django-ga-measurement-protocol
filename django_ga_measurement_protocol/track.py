@@ -22,14 +22,14 @@ def build_tracking_data(request, additional_data):
     data = {
         "v": API_VERSION,  # API Version.
         "tid": settings.GA_MEASUREMENT_PROTOCOL_UA,  # Tracking aID / Property ID.
-        "cid": str(uuid.uuid4()),  # This needs to be cid not uid or your events won't register in the behaviour section
-
+        "cid": str(
+            uuid.uuid4()
+        ),  # This needs to be cid not uid or your events won't register in the behaviour section
         "uip": request.META.get("REMOTE_ADDR"),  # User ip override
         "aip": "1",  # Anonymise user ip
         "ua": request.META.get("HTTP_USER_AGENT"),  # User agent override
         "dr": request.META.get("HTTP_REFERER"),  # Document referrer
         "dl": request.build_absolute_uri(),  # Document location URL
-
         **additional_data,
     }
 

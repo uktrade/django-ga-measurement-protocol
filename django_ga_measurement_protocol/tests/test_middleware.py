@@ -5,11 +5,12 @@ from django.urls import reverse
 
 
 @override_settings(
-    MIDDLEWARE=["django_ga_measurement_protocol.middleware.page_view_tracking_middleware"],
+    MIDDLEWARE=[
+        "django_ga_measurement_protocol.middleware.page_view_tracking_middleware"
+    ],
     ROOT_URLCONF="django_ga_measurement_protocol.tests.urls",
 )
 class PageViewTrackingMiddlewareTestCase(TestCase):
-
     @mock.patch("django_ga_measurement_protocol.middleware.track_page_view")
     def test_page_view_called_on_view(self, mock_track_page_view):
         response = self.client.get(reverse("test-middleware"))

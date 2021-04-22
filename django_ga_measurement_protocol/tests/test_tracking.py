@@ -27,7 +27,6 @@ def get_request_data(request):
     GA_MEASUREMENT_PROTOCOL_TRACK_EVENTS=True,
 )
 class TrackingTestCase(TestCase):
-
     def setUp(self):
         self.factory = RequestFactory()
 
