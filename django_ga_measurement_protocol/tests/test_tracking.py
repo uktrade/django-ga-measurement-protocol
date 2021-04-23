@@ -8,6 +8,7 @@ from django.test import override_settings, RequestFactory, TestCase
 from ..track import (
     API_VERSION,
     build_tracking_data,
+    DEBUG_GOOGLE_ANALYTICS_ENDPOINT,
     GOOGLE_ANALYTICS_ENDPOINT,
     send_tracking_data,
     track_event,
@@ -23,8 +24,8 @@ def get_request_data(request):
 
 
 @override_settings(
-    GA_MEASUREMENT_PROTOCOL_UA=FAKE_GA_ID,
     GA_MEASUREMENT_PROTOCOL_TRACK_EVENTS=True,
+    GA_MEASUREMENT_PROTOCOL_UA=FAKE_GA_ID,
 )
 class TrackingTestCase(TestCase):
     def setUp(self):
@@ -95,6 +96,27 @@ class TrackingTestCase(TestCase):
 
         send_tracking_data({"test-key": "test-value"})
         self.assertEqual(len(m.request_history), 0)
+
+    @override_settings(
+        GA_MEASUREMENT_PROTOCOL_DEBUG=True,
+    )
+    @requests_mock.Mocker()
+    @mock.patch("django_ga_measurement_protocol.track.logger")
+    def test_send_tracking_data_settings_disabled(self, mock_requests, mock_logger):
+        mock_body = {
+            "key": "value",
+        }
+        m = mock_requests.post(
+            DEBUG_GOOGLE_ANALYTICS_ENDPOINT,
+            json=mock_body,
+        )
+
+        send_tracking_data({})
+        self.assertEqual(len(m.request_history), 1)
+        mock_logger.debug.assert_called_with(
+            "Tracking response: %s",
+            mock_body,
+        )
 
     @requests_mock.Mocker()
     @mock.patch("django_ga_measurement_protocol.track.uuid")

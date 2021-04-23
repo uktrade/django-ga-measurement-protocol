@@ -7,15 +7,13 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-
 # For an overview of all of the available parameters available to be sent to GA:
 # https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters
 
-
 API_VERSION = "1"
 
-# Use "https://www.google-analytics.com/debug/collect" for testing.
 GOOGLE_ANALYTICS_ENDPOINT = "https://www.google-analytics.com/collect"
+DEBUG_GOOGLE_ANALYTICS_ENDPOINT = "https://www.google-analytics.com/debug/collect"
 
 
 def build_tracking_data(request, additional_data):
@@ -37,13 +35,20 @@ def build_tracking_data(request, additional_data):
 
 
 def send_tracking_data(tracking_data):
-    if not settings.GA_MEASUREMENT_PROTOCOL_TRACK_EVENTS:
+    if not getattr(settings, "GA_MEASUREMENT_PROTOCOL_TRACK_EVENTS", False):
         return
 
-    response = requests.post(
-        GOOGLE_ANALYTICS_ENDPOINT,
-        params=tracking_data,
-    )
+    if getattr(settings, "GA_MEASUREMENT_PROTOCOL_DEBUG", False):
+        response = requests.post(
+            DEBUG_GOOGLE_ANALYTICS_ENDPOINT,
+            params=tracking_data,
+        )
+        logger.debug("Tracking response: %s", response.json())
+    else:
+        response = requests.post(
+            GOOGLE_ANALYTICS_ENDPOINT,
+            params=tracking_data,
+        )
 
     return response
 
