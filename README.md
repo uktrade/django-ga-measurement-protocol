@@ -118,3 +118,17 @@ Formatting is done via Black and a pre-commit hook should be installed.
 ```bash
 pre-commit install
 ```
+
+### Tests
+
+To run the tests with the currently installed Python and Django version run:
+
+```bash
+pytest
+```
+
+To run against all of the possible compatible Python and Django versions run:
+
+```bash
+tox
+```
