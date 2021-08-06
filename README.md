@@ -91,7 +91,7 @@ LOGGING = {
         ...
         'django_ga_measurement_protocol': {
             'level': logging.DEBUG,
-            'handlers': 'console'
+            'handlers': ['console'],
         },
     },
 }
