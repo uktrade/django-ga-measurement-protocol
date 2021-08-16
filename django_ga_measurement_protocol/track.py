@@ -1,6 +1,9 @@
 import logging
 import requests
+import scrubadub
 import uuid
+
+from urllib.parse import parse_qsl, urlencode, urlparse
 
 from django.conf import settings
 
@@ -14,6 +17,32 @@ API_VERSION = "1"
 
 GOOGLE_ANALYTICS_ENDPOINT = "https://www.google-analytics.com/collect"
 DEBUG_GOOGLE_ANALYTICS_ENDPOINT = "https://www.google-analytics.com/debug/collect"
+
+
+_scrubber = scrubadub.Scrubber()
+_scrubber.remove_detector("name")
+
+
+def _scrub_data(data):
+    scrubbed_data = data.copy()
+
+    if "dl" in data:
+        components = urlparse(scrubbed_data["dl"])
+        scrubbed_query = [
+            (k, _scrubber.clean(v)) for k, v in parse_qsl(components.query)
+        ]
+        scrubbed_query = urlencode(scrubbed_query, safe="{}")
+        components = components._replace(query=scrubbed_query)
+        scrubbed_data["dl"] = components.geturl()
+
+    to_scrub = ["el", "ea"]
+    for key in to_scrub:
+        if key not in scrubbed_data:
+            continue
+        value = scrubbed_data[key]
+        scrubbed_data[key] = _scrubber.clean(value)
+
+    return scrubbed_data
 
 
 def build_tracking_data(request, additional_data):
@@ -30,6 +59,8 @@ def build_tracking_data(request, additional_data):
         "dl": request.build_absolute_uri(),  # Document location URL
         **additional_data,
     }
+
+    data = _scrub_data(data)
 
     return data
 

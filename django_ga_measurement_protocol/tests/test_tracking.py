@@ -70,6 +70,83 @@ class TrackingTestCase(TestCase):
             },
         )
 
+    @mock.patch("django_ga_measurement_protocol.track.uuid")
+    def test_build_tracking_data_scrubs_data(self, mock_uuid):
+        mock_uuid_value = uuid.uuid4()
+        mock_uuid.uuid4.return_value = mock_uuid_value
+
+        url = "/test-url/?email_address=test@example.com"
+        remote_addr = "127.0.0.1"
+        http_user_agent = "user-agent-string"
+        http_referer = "http://example.com"
+
+        request = self.factory.get(
+            url,
+            REMOTE_ADDR=remote_addr,
+            HTTP_USER_AGENT=http_user_agent,
+            HTTP_REFERER=http_referer,
+        )
+
+        tracking_data = build_tracking_data(
+            request,
+            {
+                "ea": "test@example.com",
+                "el": "test@example.com",
+            },
+        )
+
+        self.assertEqual(
+            tracking_data,
+            {
+                "aip": "1",
+                "cid": str(mock_uuid_value),
+                "dl": "http://testserver/test-url/?email_address={{EMAIL}}",
+                "dr": http_referer,
+                "tid": FAKE_GA_ID,
+                "ua": http_user_agent,
+                "uip": remote_addr,
+                "v": API_VERSION,
+                "ea": "{{EMAIL}}",
+                "el": "{{EMAIL}}",
+            },
+        )
+
+        url = "/test-url/?email_address=test@example.com&email_address=anothertest@example.com"
+        remote_addr = "127.0.0.1"
+        http_user_agent = "user-agent-string"
+        http_referer = "http://example.com"
+
+        request = self.factory.get(
+            url,
+            REMOTE_ADDR=remote_addr,
+            HTTP_USER_AGENT=http_user_agent,
+            HTTP_REFERER=http_referer,
+        )
+
+        tracking_data = build_tracking_data(
+            request,
+            {
+                "ea": "test@example.com",
+                "el": "test@example.com",
+            },
+        )
+
+        self.assertEqual(
+            tracking_data,
+            {
+                "aip": "1",
+                "cid": str(mock_uuid_value),
+                "dl": "http://testserver/test-url/?email_address={{EMAIL}}&email_address={{EMAIL}}",
+                "dr": http_referer,
+                "tid": FAKE_GA_ID,
+                "ua": http_user_agent,
+                "uip": remote_addr,
+                "v": API_VERSION,
+                "ea": "{{EMAIL}}",
+                "el": "{{EMAIL}}",
+            },
+        )
+
     @requests_mock.Mocker()
     def test_send_tracking_data(self, mock_requests):
         m = mock_requests.post(
