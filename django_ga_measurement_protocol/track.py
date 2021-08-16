@@ -3,6 +3,7 @@ import requests
 import scrubadub
 import uuid
 
+from ipware import get_client_ip
 from urllib.parse import parse_qsl, urlencode, urlparse
 
 from django.conf import settings
@@ -17,6 +18,8 @@ API_VERSION = "1"
 
 GOOGLE_ANALYTICS_ENDPOINT = "https://www.google-analytics.com/collect"
 DEBUG_GOOGLE_ANALYTICS_ENDPOINT = "https://www.google-analytics.com/debug/collect"
+
+UNKNOWN_IP_ADDRESS = "192.0.2.0"
 
 
 _scrubber = scrubadub.Scrubber()
@@ -46,13 +49,16 @@ def _scrub_data(data):
 
 
 def build_tracking_data(request, additional_data):
+    client_ip, _ = get_client_ip(request)
+    client_ip = client_ip or UNKNOWN_IP_ADDRESS
+
     data = {
         "v": API_VERSION,  # API Version.
         "tid": settings.GA_MEASUREMENT_PROTOCOL_UA,  # Tracking aID / Property ID.
         "cid": str(
             uuid.uuid4()
         ),  # This needs to be cid not uid or your events won't register in the behaviour section
-        "uip": request.META.get("REMOTE_ADDR"),  # User ip override
+        "uip": client_ip,  # User ip override
         "aip": "1",  # Anonymise user ip
         "ua": request.META.get("HTTP_USER_AGENT"),  # User agent override
         "dr": request.META.get("HTTP_REFERER"),  # Document referrer

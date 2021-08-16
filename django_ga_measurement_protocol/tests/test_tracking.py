@@ -147,6 +147,31 @@ class TrackingTestCase(TestCase):
             },
         )
 
+    @mock.patch("django_ga_measurement_protocol.track.get_client_ip")
+    def test_build_tracking_data_is_ip_aware(self, mock_get_client_ip):
+        url = "/test-url/"
+        remote_addr = "127.0.0.1"
+        http_user_agent = "user-agent-string"
+        http_referer = "http://example.com"
+
+        request = self.factory.get(
+            url,
+            REMOTE_ADDR=remote_addr,
+            HTTP_USER_AGENT=http_user_agent,
+            HTTP_REFERER=http_referer,
+        )
+
+        mock_get_client_ip.return_value = "192.168.0.1", True
+        tracking_data = build_tracking_data(request, {})
+        mock_get_client_ip.assert_called_with(request)
+        self.assertEqual(tracking_data["uip"], "192.168.0.1")
+
+        mock_get_client_ip.reset()
+        mock_get_client_ip.return_value = None, True
+        tracking_data = build_tracking_data(request, {})
+        mock_get_client_ip.assert_called_with(request)
+        self.assertEqual(tracking_data["uip"], "192.0.2.0")
+
     @requests_mock.Mocker()
     def test_send_tracking_data(self, mock_requests):
         m = mock_requests.post(
